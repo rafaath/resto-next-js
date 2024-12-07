@@ -124,9 +124,12 @@ export default function TablePage({ params }: PageProps) {
             <div className="min-h-screen p-4">
                 <div>
                     <h1 className="text-2xl font-bold mb-4">Welcome to Digital Menu</h1>
-                    <p className="text-gray-600">Table: {table}</p>
-                    <p className="text-gray-600">Branch: {branch}</p>
-                    <p className="text-gray-600">Franchise: {franchise}</p>
+                    <div className="space-y-2">
+                        <p className="text-gray-600">Table: {table}</p>
+                        <p className="text-gray-600">Branch: {branch}</p>
+                        <p className="text-gray-600">Franchise: {franchise}</p>
+                        <p className="text-gray-600">Table PIN: {status.table_pin}</p>
+                    </div>
                 </div>
             </div>
         );
