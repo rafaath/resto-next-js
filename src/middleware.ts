@@ -4,10 +4,10 @@ import { NextResponse } from "next/server";
 
 export default authMiddleware({
     publicRoutes: [
+        "/",
         "/sign-in",
         "/sign-up",
         "/api/auth/callback",
-        "/",
         "/:franchise/:branch/:table", // Allow initial table status check
     ],
     async afterAuth(auth, req) {
@@ -18,21 +18,31 @@ export default authMiddleware({
             return NextResponse.next();
         }
 
+        // Handle root path
+        if (req.nextUrl.pathname === '/') {
+            return NextResponse.next();
+        }
+
+        // Handle single segment or two segment paths (invalid routes)
+        const segments = req.nextUrl.pathname.split('/').filter(Boolean);
+        if (segments.length === 1 || segments.length === 2) {
+            return NextResponse.next(); // Will show 404
+        }
+
         // Check if it's an auth page
         const isAuthPage = req.nextUrl.pathname.startsWith('/sign-in') ||
             req.nextUrl.pathname.startsWith('/sign-up');
 
         // If user is signed in and tries to access auth page
         if (auth.userId && isAuthPage) {
-            // Get the redirect URL from query params
             const redirectTo = req.nextUrl.searchParams.get('redirect_url');
             return NextResponse.redirect(new URL(redirectTo || '/', req.url));
         }
 
-        // Check if it's a table route
+        // For table routes (F1/B1/T1 format)
         const tableRouteMatch = req.nextUrl.pathname.match(/^\/([^\/]+)\/([^\/]+)\/([^\/]+)$/);
         if (tableRouteMatch) {
-            // No need to redirect here, let the page component handle the auth state
+            // Let the page component handle the auth state
             return NextResponse.next();
         }
 
@@ -42,7 +52,6 @@ export default authMiddleware({
 
 export const config = {
     matcher: [
-        // Match all paths except static files and API routes
         "/((?!api|trpc|_next/static|_next/image|favicon.ico).*)",
     ],
 };

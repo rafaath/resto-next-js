@@ -1,4 +1,4 @@
-// app/layout.tsx
+// app/layout.tsx (MAIN layout, not in (main) group)
 import { ClerkProvider } from "@clerk/nextjs";
 import { Providers } from "./providers";
 import { Toaster } from "@/components/ui/toaster";
