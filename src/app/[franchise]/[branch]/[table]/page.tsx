@@ -32,57 +32,64 @@ export default function TablePage({ params }: PageProps) {
     const { toast } = useToast();
     const router = useRouter();
 
-    useEffect(() => {
-        const checkStatus = async () => {
-            try {
-                let headers: Record<string, string> = {};
-                if (user) {
-                    const token = await getToken();
-                    if (token) {
-                        headers["Authorization"] = `Bearer ${token}`;
-                    }
+    const checkStatus = async () => {
+        try {
+            let headers: Record<string, string> = {};
+            if (user) {
+                const token = await getToken();
+                if (token) {
+                    headers["Authorization"] = `Bearer ${token}`;
                 }
-
-                console.log("Checking status...");
-                const response = await axios.get<UserStatus>(
-                    `https://menubot-backend.onrender.com/user_status/${franchise}/${branch}/${table}`,
-                    { headers }
-                );
-
-                console.log("Status response:", response.data);
-                setStatus(response.data);
-
-                if (response.data.status === "unauthorized" && !user) {
-                    console.log("Redirecting to sign in...");
-                    const currentPath = `/${franchise}/${branch}/${table}`;
-                    router.push(`/sign-in?redirect_url=${encodeURIComponent(currentPath)}`);
-                }
-
-            } catch (error: any) {
-                console.error("Full error:", error);
-                let errorMessage = "Failed to check table status";
-                if (error.response) {
-                    console.error("Response data:", error.response.data);
-                    console.error("Response status:", error.response.status);
-                    errorMessage = error.response.data.message || errorMessage;
-                }
-
-                toast({
-                    title: "Error",
-                    description: errorMessage,
-                    variant: "destructive",
-                });
-            } finally {
-                setIsLoading(false);
             }
-        };
 
+            const response = await axios.get<UserStatus>(
+                `https://menubot-backend.onrender.com/user_status/${franchise}/${branch}/${table}`,
+                { headers }
+            );
+
+            setStatus(response.data);
+
+            if (response.data.status === "unauthorized" && !user) {
+                const currentPath = `/${franchise}/${branch}/${table}`;
+                router.push(`/sign-in?redirect_url=${encodeURIComponent(currentPath)}`);
+            }
+
+            return response.data;
+        } catch (error: any) {
+            let errorMessage = "Failed to check table status";
+            if (error.response) {
+                errorMessage = error.response.data.message || errorMessage;
+            }
+
+            toast({
+                title: "Error",
+                description: errorMessage,
+                variant: "destructive",
+            });
+            throw error;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
         if (isUserLoaded) {
             checkStatus();
         }
-    }, [isUserLoaded, user, franchise, branch, table]);
+    }, [isUserLoaded, user]);
 
-    // Show loading state
+    const handlePinVerified = async () => {
+        try {
+            const newStatus = await checkStatus();
+            if (newStatus.status === "verified") {
+                setStatus(newStatus);
+                setIsLoading(false);
+            }
+        } catch (error) {
+            console.error("Error checking status after pin verification:", error);
+        }
+    };
+
     if (!isUserLoaded || isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -91,7 +98,6 @@ export default function TablePage({ params }: PageProps) {
         );
     }
 
-    // Handle unauthorized case (for both no user and invalid/expired token)
     if (!user || status?.status === "unauthorized") {
         const currentPath = `/${franchise}/${branch}/${table}`;
         router.push(`/sign-in?redirect_url=${encodeURIComponent(currentPath)}`);
@@ -131,14 +137,10 @@ export default function TablePage({ params }: PageProps) {
             franchise={franchise}
             branch={branch}
             table={table}
-            onPinVerified={() => {
-                setStatus(null);
-                setIsLoading(true);
-            }}
+            onPinVerified={handlePinVerified}
         />;
     }
 
-    // Fallback loading state
     return (
         <div className="min-h-screen flex items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin" />

@@ -13,7 +13,7 @@ interface TablePinInputProps {
     franchise: string;
     branch: string;
     table: string;
-    onPinVerified: () => void;
+    onPinVerified: () => Promise<void>;
 }
 
 export function TablePinInput({ franchise, branch, table, onPinVerified }: TablePinInputProps) {
@@ -47,8 +47,8 @@ export function TablePinInput({ franchise, branch, table, onPinVerified }: Table
                 description: "Table pin verified successfully",
             });
 
-            // Instead of reloading, call the callback to check status
-            onPinVerified();
+            // Call onPinVerified and wait for it to complete
+            await onPinVerified();
 
         } catch (error: any) {
             toast({
@@ -56,8 +56,7 @@ export function TablePinInput({ franchise, branch, table, onPinVerified }: Table
                 description: error.response?.data?.detail || "Failed to verify table pin",
                 variant: "destructive",
             });
-        } finally {
-            setIsLoading(false);
+            setIsLoading(false); // Only set loading false on error
         }
     };
 
